@@ -47,8 +47,11 @@ public class Minheap<T extends Comparable<? super T>>
 
     @Override
     public void hideAndSwap(T value) {
+        Comparable temp = Heap[--n];
+
         Heap[0] = value;
-        Heap[n--] = Heap[0];
+        Heap[n] = Heap[0];
+        Heap[0] = temp;
         if (n != 0) {
             siftdown(0);   // Put new heap root val in correct place
         }

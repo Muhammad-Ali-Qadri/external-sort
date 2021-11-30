@@ -47,4 +47,20 @@ public class MinheapTest {
         assertEquals(thirdpop, (Integer) 5);
     }
 
+    /*
+    tests hideAndSwap
+    Note... I think this is the correct behavior.
+    heap was 2 5 3 (which is valid)
+    after trying to hide and swap 12.. it became just 3 and 5 since, top val got
+    poppped
+     */
+    @Test
+    public void hideAndSwapTest() {
+        minheap.insert(3);
+        minheap.insert(2);
+        minheap.hideAndSwap(12);
+        String str = minheap.toString();
+        assertEquals(minheap.toString(), "3,5");
+    }
+
 }
