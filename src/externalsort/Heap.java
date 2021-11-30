@@ -8,7 +8,7 @@ package externalsort;
  * @version 1
  */
 
- interface Heap<T extends Comparable<?>> {
+ public interface Heap<T extends Comparable<?>> {
 
     /**
      * Insert value into the Heap, and maintain heap property
