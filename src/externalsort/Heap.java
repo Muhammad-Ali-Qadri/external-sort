@@ -8,14 +8,14 @@ package externalsort;
  * @version 1
  */
 
- public interface Heap<T extends Comparable<?>> {
+public interface Heap<T extends Comparable<?>> {
 
     /**
      * Insert value into the Heap, and maintain heap property
      *
      * @param value the value to be inserted
      */
-     void insert(T value);
+    void insert(T value);
 
 
     /**
@@ -23,7 +23,7 @@ package externalsort;
      *
      * @return the value removed from this Heap
      */
-     T pop();
+    T pop();
 
 
     /**
@@ -34,19 +34,19 @@ package externalsort;
      *
      * @param value the value to swap and hide
      */
-     void hideAndSwap(T value);
+    void hideAtEnd(T value);
 
 
     /**
      * Restructure the heap to comply with underlying heap property.
      */
-     void heapify();
+    void heapify();
 
 
     /**
      * Take size of heap back to original initialized heap size, and heapify
      */
-     void recreate();
+    void recreate();
 
 
     /**
@@ -54,14 +54,28 @@ package externalsort;
      *
      * @return int value representing size
      */
-     int getSize();
+    int getSize();
 
 
     /**
-     * Shift the newSize length of values from end of heap to the start, and
-     * reduce the size of heap to newSize. Then heapify.
+     * Returns If the heap is full
      *
-     * @param newSize the new size of the heap
+     * @return True or False value indicating if heap is full or not
      */
-     void reduceSize(int newSize);
+    boolean isFull();
+
+
+    /**
+     * Returns If the heap is empty
+     *
+     * @return True or False value indicating if heap is empty or not
+     */
+    boolean isEmpty();
+
+    /**
+     * Functions only when visible elements are empty and only hidden elements
+     * remain. Brings the hidden elements to the front of the heap and does
+     * heapify
+     */
+    void heapifyHiddenElements();
 }

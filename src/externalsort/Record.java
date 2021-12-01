@@ -109,11 +109,13 @@ public class Record implements Comparable<Record> {
 
 
     /**
-     * {@inheritDoc}
+     * returns string in format "key : value"
+     *
+     * @return string representation of this record
      */
     @Override
     public String toString() {
-        return super.toString();
+        return "{" + getKey() + " : " + getValue() + "}";
     }
 
 
