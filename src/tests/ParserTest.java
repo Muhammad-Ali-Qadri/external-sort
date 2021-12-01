@@ -7,9 +7,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 
 
-public class ParserTests {
+public class ParserTest {
     Parser parser;
 
+    //TODO: Complete parser test cases with full commenting
     /*
         Sets up parser with filename
      */
@@ -28,11 +29,11 @@ public class ParserTests {
      */
     @Test
     public void test1() {
-        try {
-            parser.readRecords();
-        }
-        catch(IOException e) {
-            System.out.println("IOException during reading records.");
-        }
+//        try {
+//            //parser.read();
+//        }
+//        catch(IOException e) {
+//            System.out.println("IOException during reading records.");
+//        }
     }
 }

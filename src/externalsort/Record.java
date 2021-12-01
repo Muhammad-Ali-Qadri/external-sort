@@ -70,8 +70,8 @@ public class Record implements Comparable<Record> {
      *
      * @return Double value
      */
-    public long getValue() {
-        return record.getLong(7);
+    public double getValue() {
+        return record.getDouble(8);
     }
 
 
@@ -115,7 +115,7 @@ public class Record implements Comparable<Record> {
      */
     @Override
     public String toString() {
-        return "{" + getKey() + " : " + getValue() + "}";
+        return getKey() + "\t" + getValue();
     }
 
 
