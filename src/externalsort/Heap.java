@@ -72,6 +72,15 @@ public interface Heap<T extends Comparable<?>> {
      */
     boolean isEmpty();
 
+
+    /**
+     * Returns If the heap has hidden elements
+     *
+     * @return True or False value indicating if heap has hidden elements
+     */
+    boolean hasHiddenElements();
+
+
     /**
      * Functions only when visible elements are empty and only hidden elements
      * remain. Brings the hidden elements to the front of the heap and does

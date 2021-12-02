@@ -35,7 +35,7 @@ public class ParserTest {
         inputBuffer = ByteBuffer.allocate(16 * 512);
         int index = 0;
         try {
-            while (parser.read(inputBuffer, index) > 0) {
+            while (parser.read(inputBuffer, index, inputBuffer.limit()) > 0) {
                 byte[] rec = new byte[16];
                 inputBuffer.get(rec, 0, 16);
                 Record record = new Record(rec);

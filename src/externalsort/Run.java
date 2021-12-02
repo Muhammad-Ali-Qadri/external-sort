@@ -9,7 +9,7 @@ package externalsort;
  */
 public class Run {
     private final int start;
-    private final int length;
+    private final int records;
 
     /**
      * Initializes a run
@@ -23,14 +23,14 @@ public class Run {
         }
 
         start = st;
-        length = len;
+        records = len;
     }
 
     public int getStart() {
         return start;
     }
 
-    public int getLength() {
-        return length;
+    public int getRecords() {
+        return records;
     }
 }

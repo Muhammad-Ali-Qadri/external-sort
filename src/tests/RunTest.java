@@ -40,6 +40,6 @@ public class RunTest {
      * */
     @Test
     public void testGetLength(){
-        assertEquals(32, run.getLength());
+        assertEquals(32, run.getRecords());
     }
 }

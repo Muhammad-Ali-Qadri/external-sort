@@ -1,6 +1,6 @@
 package externalsort;
 
-import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -17,25 +17,27 @@ import java.util.List;
  */
 public class Sort {
 
-    private final static String RUN_FILE_NAME = "runFile.bin";
+    private final static String RUN_FILE_NAME = "runFile";
 
     private final String sortFileName;
 
     private Parser sortFile;
     private FileOutputStream outputFile;
 
-    private final List<Run> runs;
+    private List<Run> runs;
 
-    private final MinHeap<Record> heap;
-    private final ByteBuffer inputBuffer;
-    private final ByteBuffer outputBuffer;
+    private Heap<Record> heap;
+    private ByteBuffer inputBuffer;
+    private ByteBuffer outputBuffer;
 
     private final int recordSize;
     private final int recordsInBlock;
     private final int inputBufferBlocks;
     private final int outputBufferBlocks;
     private final int heapBlocks;
+
     private int runCounter;
+
     /**
      * Instantiate the sorting process based on defined environment parameters
      *
@@ -64,7 +66,66 @@ public class Sort {
         inputBufferBlocks = inBuffSize;
         outputBufferBlocks = outBuffSize;
         heapBlocks = heapBlk;
+    }
 
+
+    /**
+     * Uses external sorting algorithm with replacement selection to sort the
+     * file
+     *
+     * @throws IOException If the file throws an unexpected error
+     */
+    public void sort() throws IOException {
+
+        initializeMemory();
+
+        long seekPos = 0;
+
+        //While not End of file
+        while (sortFile.read(inputBuffer, seekPos,
+                inputBuffer.capacity()) > 0) {
+            byte[] rec = new byte[recordSize];
+            Record lastPopped = null;
+
+            //Read each record from block
+            while (inputBuffer.hasRemaining()) {
+                inputBuffer.get(rec);
+                Record record = new Record(rec);
+
+                //Heap is full and all elements are hidden
+                if (heap.isFull() && heap.getSize() == 0) {
+                    resetForRun(runs);
+                    heap.recreate();
+                }
+
+                //If heap is full and there are visible elements
+                lastPopped = heap.pop();
+                putAndFlush(lastPopped);
+
+                //Heap is not full, compare with last element to output
+                // buffer
+                if (record.compareTo(lastPopped) > -1) {
+                    //Just add to heap
+                    heap.insert(record);
+                } //Else Hide this element in the heap
+                else {
+                    heap.hideAtEnd(record);
+                }
+            }
+
+            //Read next block
+            seekPos += (long) recordSize * recordsInBlock;
+        }
+
+        //When we reach EOF
+        flushHeap();
+
+        sortFile.close();
+        outputFile.close();
+        mergeRuns(heapBlocks);
+    }
+
+    private void initializeMemory() throws FileNotFoundException {
         heap = new MinHeap<>(recordSize * recordsInBlock * heapBlocks);
         inputBuffer =
                 ByteBuffer.allocate(recordSize * recordsInBlock
@@ -80,81 +141,12 @@ public class Sort {
         runCounter = 0;
     }
 
-
-    /**
-     * Uses external sorting algorithm with replacement selection to sort the
-     * file
-     *
-     * @throws IOException If the file throws an unexpected error
-     * */
-    public void sort() throws IOException {
-        long seekPos = 0;
-
-        //While not End of file
-        while(sortFile.read(inputBuffer, seekPos) > 0){
-            byte[] rec = new byte[recordSize];
-            Record lastPopped = null;
-            //int recPos = 0; I dont think we need this, .get method of input buffer offsets the array, not the buffer.
-
-            //Read each record from block
-            while(inputBuffer.hasRemaining() ){
-                inputBuffer.get(rec, 0, recordSize);
-                Record record = new Record(rec);
-
-                //If heap is full and there are visible elements
-                if(heap.isFull() && heap.getSize() != 0){
-                    lastPopped = heap.pop();
-                    putAndFlush(lastPopped);
-                } //Heap is full and all elements are hidden
-                else if(heap.isFull() && heap.getSize() == 0){
-                    //TODO: End run and reset
-                    resetForRun();
-                }
-
-                //Heap is not full, compare with last element to output
-                // buffer
-                if(record.compareTo(lastPopped) > -1){
-                    //Just add to heap
-                    heap.insert(record);
-                } //Hide this element in the heap
-                else{
-                    heap.hideAtEnd(record);
-                }
-
-                //recPos += recordSize;
-            }
-
-            //Read next block
-            seekPos += (long) recordSize * recordsInBlock;
-        }
-
-        //TODO: When reached end of file (EOF)
-        /* should move hidden elements, if they exist to front.
-        * Then will pop the rest of the heap into the output buffer.
-        * AT 1 hr 13 of the video... wouldn't it get stuck here?
-        * 6 less than 9, but would go in the next slot so the output buffer wouldn't be sorted?
-        * */
-        heap.heapifyHiddenElements();
-        while (!heap.isEmpty() ) {
-            Record lastPopped = null;
-            if(heap.isFull() && heap.getSize() != 0){
-                lastPopped = heap.pop();
-                putAndFlush(lastPopped);
-            } //Heap is full and all elements are hidden
-            else if(heap.isFull() && heap.getSize() == 0){
-                resetForRun();
-            }
-        }
-
-        multiwayMerge(8);
-    }
-
-    private void putAndFlush(Record out) throws IOException{
+    private void putAndFlush(Record out) throws IOException {
         outputBuffer.putLong(out.getKey());
         outputBuffer.putDouble(out.getKey());
         runCounter++;
 
-        if(!outputBuffer.hasRemaining()){
+        if (!outputBuffer.hasRemaining()) {
             outputFile.write(outputBuffer.array());
             outputFile.flush();
 
@@ -166,25 +158,167 @@ public class Sort {
     /**
      * creates a new run, based on where the last one ended.
      */
-    private void resetForRun() {
-        int start = runs.size() == 0 ? 0 :
-                runs.get(runs.size() - 1).getLength() + 1 +
-                        runs.get(runs.size() - 1).getStart() ;
-        Run run = new Run(start, runCounter);
-        runs.add(run);
+    private void resetForRun(List<Run> run) {
+        int start = run.isEmpty() ? 0 :
+                run.get(run.size() - 1).getRecords() +
+                run.get(run.size() - 1).getStart();
+
+        run.add(new Run(start, runCounter));
         runCounter = 0;
-        heap.recreate();
     }
 
     /**
-     * Performs the merge on the sorted runs, over... and over again.
-     * @param number describes how many runs are being referenced.
+     * The current run won`t be cancelled when we reach EOF, all the
+     * remaining visible elements in the heap will be added to output
+     * buffer as a part of that run.
+     * <p>
+     * Once finished and we have hidden elements as well, we will start a
+     * new run and add them to that run accordingly
      */
-    public void multiwayMerge(int number) {
+    private void flushHeap() throws IOException {
 
-        for(int i = 0; i < runs.size()/number; i++) {
-            return;
+        while (!heap.isEmpty() || heap.hasHiddenElements()) {
+            Record lastPopped;
+            if (!heap.isEmpty()) {
+                lastPopped = heap.pop();
+                putAndFlush(lastPopped);
+            } //Heap is full and all elements are hidden
+            else if (heap.hasHiddenElements()) {
+                heap.heapifyHiddenElements();
+                resetForRun(runs);
+            }
         }
+    }
+
+
+    /**
+     * Performs the merge on the sorted runs, over... and over again.
+     *
+     * @param blocksToMerge describes how many runs are being referenced.
+     */
+    private void mergeRuns(int blocksToMerge) throws
+            FileNotFoundException, IOException {
+
+        //Repeat until our file is a single run (indicates sorted file)
+        while (runs.size() > 1) {
+            sortFile = new Parser(RUN_FILE_NAME);
+            runCounter = 0;
+
+            //Remove contents of file to write in first
+            clearFile(sortFileName);
+
+            //Write back to original file
+            outputFile = new FileOutputStream(sortFileName, true);
+
+            //For each set of blocksToMerge number of runs
+            int totalGroups = (runs.size() / blocksToMerge) == 0 ? 1 :
+                    (runs.size() / blocksToMerge);
+
+            //Complete runs on file
+            runs = completeMergeRun(blocksToMerge, totalGroups);
+
+            sortFile.close();
+            outputFile.close();
+
+            if (runs.size() > 1) {
+                copyContent(sortFileName, RUN_FILE_NAME);
+            }
+        }
+    }
+
+    private List<Run> completeMergeRun(int blocksToMerge, int totalGroups)
+            throws IOException {
+        List<Run> mergeRuns = new ArrayList<>();
+        for (int runGroup = 0; runGroup < totalGroups; runGroup++) {
+
+            runCounter = 0;
+            int[] totalGroupRecords =
+                    getRunRecordCounts(runGroup, blocksToMerge);
+            int[] completedRecords = new int[blocksToMerge];
+
+            //Load each run`s first blocks into the heap
+            for (int run = 0; run < blocksToMerge; run++) {
+                int runIndex = (runGroup * blocksToMerge) + run;
+                loadBlockToHeap(runs.get(runIndex).getStart(),
+                        Integer.min(runs.get(runIndex).getRecords(),
+                                inputBuffer.capacity()), run);
+            }
+
+            //Put values from heap into output buffer
+            while (!heap.isEmpty()) {
+                Record rec = heap.pop();
+                int run = rec.getRunFlag();
+                putAndFlush(rec);
+
+                completedRecords[run]++;
+
+                //Load next block of depleted run (if exist)
+                if (completedRecords[run] % recordsInBlock == 0
+                    && completedRecords[run] < totalGroupRecords[run]) {
+                    int runIndex = (runGroup * blocksToMerge) + run;
+
+                    int recordsLeft =
+                            Integer.min(runs.get(runIndex).getRecords()
+                                        - completedRecords[run],
+                                    inputBuffer.capacity());
+
+                    loadBlockToHeap(runs.get(runIndex).getStart()
+                                    + completedRecords[run], recordsLeft, run);
+                }
+
+                if (completedRecords[run] == totalGroupRecords[run]) {
+                    inputBuffer.clear();
+                }
+            }
+
+            //One run completed
+            resetForRun(mergeRuns);
+        }
+
+        return mergeRuns;
+    }
+
+
+    private void clearFile(String fileName) throws IOException {
+        new FileOutputStream(fileName).close();
+    }
+
+
+    private int[] getRunRecordCounts(int runGroup, int blocksToMerge) {
+        int[] runBlockMap = new int[blocksToMerge];
+        for (int i = 0; i < blocksToMerge; i++) {
+            int runPos = (runGroup * blocksToMerge) + i;
+            runBlockMap[i] = runs.get(runPos).getRecords();
+        }
+
+        return runBlockMap;
+    }
+
+    private void loadBlockToHeap(long position, int length, int runFlag)
+            throws IOException {
+        sortFile.read(inputBuffer, position, length);
+        byte[] rec = new byte[recordSize];
+
+        while (inputBuffer.hasRemaining()) {
+            inputBuffer.get(rec);
+            heap.insert(new Record(rec, runFlag));
+        }
+    }
+
+
+    private void copyContent(String source, String destination)
+            throws FileNotFoundException, IOException {
+
+        FileInputStream fis = new FileInputStream(source);
+        FileOutputStream fos = new FileOutputStream(destination);
+
+        while (fis.read(inputBuffer.array()) > -1) {
+            fos.write(inputBuffer.array());
+        }
+
+        fis.close();
+        fos.close();
+        inputBuffer.clear();
     }
 
 }

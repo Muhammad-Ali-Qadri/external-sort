@@ -101,9 +101,9 @@ public class MinHeap<T extends Comparable<? super T>>
      */
     @Override
     public void recreate() {
-        if(currentSize < maxHeapSize){
+        if(hasHiddenElements()){
+            index = maxHeapSize;
             currentSize = maxHeapSize;
-            index = currentSize;
             heapify();
         }
     }
@@ -124,6 +124,15 @@ public class MinHeap<T extends Comparable<? super T>>
     @Override
     public boolean isEmpty() {
         return index == 0;
+    }
+
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public boolean hasHiddenElements() {
+        return currentSize < maxHeapSize;
     }
 
 
