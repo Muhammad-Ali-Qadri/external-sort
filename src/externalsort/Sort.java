@@ -35,7 +35,7 @@ public class Sort {
     private final int inputBufferBlocks;
     private final int outputBufferBlocks;
     private final int heapBlocks;
-
+    private int runCounter;
     /**
      * Instantiate the sorting process based on defined environment parameters
      *
@@ -77,6 +77,7 @@ public class Sort {
         sortFile = new Parser(sortFileName);
 
         outputFile = new FileOutputStream(RUN_FILE_NAME, true);
+        runCounter = 0;
     }
 
 
@@ -93,20 +94,21 @@ public class Sort {
         while(sortFile.read(inputBuffer, seekPos) > 0){
             byte[] rec = new byte[recordSize];
             Record lastPopped = null;
-            int recPos = 0;
+            //int recPos = 0; I dont think we need this, .get method of input buffer offsets the array, not the buffer.
 
             //Read each record from block
-            while(recPos < inputBuffer.limit()){
-                inputBuffer.get(rec, recPos, recordSize);
+            while(inputBuffer.hasRemaining() ){
+                inputBuffer.get(rec, 0, recordSize);
                 Record record = new Record(rec);
 
                 //If heap is full and there are visible elements
                 if(heap.isFull() && heap.getSize() != 0){
                     lastPopped = heap.pop();
-                    putAndFlush(heap.pop());
+                    putAndFlush(lastPopped);
                 } //Heap is full and all elements are hidden
                 else if(heap.isFull() && heap.getSize() == 0){
                     //TODO: End run and reset
+                    resetForRun();
                 }
 
                 //Heap is not full, compare with last element to output
@@ -119,7 +121,7 @@ public class Sort {
                     heap.hideAtEnd(record);
                 }
 
-                recPos += recordSize;
+                //recPos += recordSize;
             }
 
             //Read next block
@@ -127,17 +129,61 @@ public class Sort {
         }
 
         //TODO: When reached end of file (EOF)
+        /* should move hidden elements, if they exist to front.
+        * Then will pop the rest of the heap into the output buffer.
+        * AT 1 hr 13 of the video... wouldn't it get stuck here?
+        * 6 less than 9, but would go in the next slot so the output buffer wouldn't be sorted?
+        * */
+        heap.heapifyHiddenElements();
+        while (!heap.isEmpty() ) {
+            Record lastPopped = null;
+            if(heap.isFull() && heap.getSize() != 0){
+                lastPopped = heap.pop();
+                putAndFlush(lastPopped);
+            } //Heap is full and all elements are hidden
+            else if(heap.isFull() && heap.getSize() == 0){
+                resetForRun();
+            }
+        }
+
+        multiwayMerge(8);
     }
 
     private void putAndFlush(Record out) throws IOException{
         outputBuffer.putLong(out.getKey());
         outputBuffer.putDouble(out.getKey());
+        runCounter++;
 
         if(!outputBuffer.hasRemaining()){
             outputFile.write(outputBuffer.array());
             outputFile.flush();
 
             outputBuffer.clear();
+            inputBuffer.clear();
+        }
+    }
+
+    /**
+     * creates a new run, based on where the last one ended.
+     */
+    private void resetForRun() {
+        int start = runs.size() == 0 ? 0 :
+                runs.get(runs.size() - 1).getLength() + 1 +
+                        runs.get(runs.size() - 1).getStart() ;
+        Run run = new Run(start, runCounter);
+        runs.add(run);
+        runCounter = 0;
+        heap.recreate();
+    }
+
+    /**
+     * Performs the merge on the sorted runs, over... and over again.
+     * @param number describes how many runs are being referenced.
+     */
+    public void multiwayMerge(int number) {
+
+        for(int i = 0; i < runs.size()/number; i++) {
+            return;
         }
     }
 

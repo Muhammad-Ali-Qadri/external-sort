@@ -39,11 +39,11 @@ public class Parser {
      * */
     public int read(ByteBuffer buffer, long pos) throws IOException {
 
-        if(buffer == null || pos < 1){
+        if(buffer == null || pos < 0){
             throw new IllegalArgumentException();
         }
 
         rafFile.seek(pos);
-        return rafFile.read(buffer.array());
+        return rafFile.read(buffer.array() );
     }
 }
