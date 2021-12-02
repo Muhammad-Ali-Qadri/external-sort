@@ -19,7 +19,7 @@ public class Sort {
 
     private final static String RUN_FILE_NAME = "runFile";
 
-    private final String sortFileName;
+    private String sortFileName;
 
     private Parser sortFile;
     private FileOutputStream outputFile;
@@ -38,10 +38,11 @@ public class Sort {
 
     private int runCounter;
 
+    private List<Long> checkRun; //TODO: Remove after debugging
+
     /**
      * Instantiate the sorting process based on defined environment parameters
      *
-     * @param fileName    The name of the file to be sorted
      * @param recSize     The size of the record in bytes in the file
      * @param recInBlk    The number of records considered in each block
      * @param inBuffSize  The size of the buffer in blocks that is read from
@@ -51,16 +52,15 @@ public class Sort {
      * @param heapBlk     The size of the heap in blocks
      * @throws FileNotFoundException if provided file for sorting does not exist
      */
-    public Sort(String fileName, int recSize, int recInBlk, int inBuffSize,
+    public Sort(int recSize, int recInBlk, int inBuffSize,
                 int outBuffSize,
                 int heapBlk) throws FileNotFoundException {
 
-        if (fileName.isEmpty() || recSize < 1 || recInBlk < 1
+        if (recSize < 1 || recInBlk < 1
             || inBuffSize < 1 || outBuffSize < 1) {
             throw new IllegalArgumentException();
         }
 
-        sortFileName = fileName;
         recordSize = recSize;
         recordsInBlock = recInBlk;
         inputBufferBlocks = inBuffSize;
@@ -73,22 +73,30 @@ public class Sort {
      * Uses external sorting algorithm with replacement selection to sort the
      * file
      *
+     * @param fileName The name of the file to be sorted
      * @throws IOException If the file throws an unexpected error
      */
-    public void sort() throws IOException {
+    public void sort(String fileName) throws IOException {
 
+        checkRun = new ArrayList<>();
+
+        if (fileName.isEmpty()) {
+            throw new IllegalArgumentException();
+        }
+
+        sortFileName = fileName;
         initializeMemory();
 
         long seekPos = 0;
+        Record lastPopped = null;
 
         //While not End of file
         while (sortFile.read(inputBuffer, seekPos,
                 inputBuffer.capacity()) > 0) {
-            byte[] rec = new byte[recordSize];
-            Record lastPopped = null;
 
             //Read each record from block
             while (inputBuffer.hasRemaining()) {
+                byte[] rec = new byte[recordSize];
                 inputBuffer.get(rec);
                 Record record = new Record(rec);
 
@@ -96,11 +104,16 @@ public class Sort {
                 if (heap.isFull() && heap.getSize() == 0) {
                     resetForRun(runs);
                     heap.recreate();
-                }
+                    //clear last popped
+                    lastPopped = null;
 
-                //If heap is full and there are visible elements
-                lastPopped = heap.pop();
-                putAndFlush(lastPopped);
+                }//If heap is full and there are visible elements
+
+                if (heap.isFull() && heap.getSize() != 0) {
+                    lastPopped = heap.pop();
+                    checkRun.add(lastPopped.getKey());
+                    putAndFlush(lastPopped);
+                }
 
                 //Heap is not full, compare with last element to output
                 // buffer
@@ -113,8 +126,13 @@ public class Sort {
                 }
             }
 
+            inputBuffer.clear();
             //Read next block
             seekPos += (long) recordSize * recordsInBlock;
+        }
+
+        if (heap.isEmpty() && runs.isEmpty()) {
+            resetForRun(runs);
         }
 
         //When we reach EOF
@@ -126,7 +144,7 @@ public class Sort {
     }
 
     private void initializeMemory() throws FileNotFoundException {
-        heap = new MinHeap<>(recordSize * recordsInBlock * heapBlocks);
+        heap = new MinHeap<>(recordsInBlock * heapBlocks);
         inputBuffer =
                 ByteBuffer.allocate(recordSize * recordsInBlock
                                     * inputBufferBlocks);
@@ -151,7 +169,6 @@ public class Sort {
             outputFile.flush();
 
             outputBuffer.clear();
-            inputBuffer.clear();
         }
     }
 
@@ -176,17 +193,30 @@ public class Sort {
      * new run and add them to that run accordingly
      */
     private void flushHeap() throws IOException {
+        boolean addedVisibleElements = false;
+        boolean addedHiddenElements = false;
 
         while (!heap.isEmpty() || heap.hasHiddenElements()) {
             Record lastPopped;
+
             if (!heap.isEmpty()) {
                 lastPopped = heap.pop();
+                checkRun.add(lastPopped.getKey());
                 putAndFlush(lastPopped);
+                addedVisibleElements = true;
             } //Heap is full and all elements are hidden
             else if (heap.hasHiddenElements()) {
+                if (addedVisibleElements) {
+                    resetForRun(runs);
+                    addedVisibleElements = false;
+                }
                 heap.heapifyHiddenElements();
-                resetForRun(runs);
+                addedHiddenElements = true;
             }
+        }
+
+        if (addedVisibleElements || addedHiddenElements) {
+            resetForRun(runs);
         }
     }
 
@@ -199,8 +229,10 @@ public class Sort {
     private void mergeRuns(int blocksToMerge) throws
             FileNotFoundException, IOException {
 
+        boolean hasMerged = false;
         //Repeat until our file is a single run (indicates sorted file)
         while (runs.size() > 1) {
+            hasMerged = true;
             sortFile = new Parser(RUN_FILE_NAME);
             runCounter = 0;
 
@@ -224,6 +256,12 @@ public class Sort {
                 copyContent(sortFileName, RUN_FILE_NAME);
             }
         }
+
+        //File already sorted - no need for merging - just paste result to
+        // original file
+        if (!hasMerged) {
+            copyContent(RUN_FILE_NAME, sortFileName);
+        }
     }
 
     private List<Run> completeMergeRun(int blocksToMerge, int totalGroups)
@@ -237,11 +275,16 @@ public class Sort {
             int[] completedRecords = new int[blocksToMerge];
 
             //Load each run`s first blocks into the heap
+            //TODO: Fix some bugs, see while debugging on test case
             for (int run = 0; run < blocksToMerge; run++) {
                 int runIndex = (runGroup * blocksToMerge) + run;
-                loadBlockToHeap(runs.get(runIndex).getStart(),
-                        Integer.min(runs.get(runIndex).getRecords(),
-                                inputBuffer.capacity()), run);
+                long start = (long) runs.get(runIndex).getStart() * recordSize;
+                int length = runs.get(runIndex).getRecords() * recordSize;
+
+                start = (start == 0) ? 0: start - recordSize;
+
+                loadBlockToHeap(start,
+                        Integer.min(length, inputBuffer.capacity()), run);
             }
 
             //Put values from heap into output buffer
@@ -258,12 +301,17 @@ public class Sort {
                     int runIndex = (runGroup * blocksToMerge) + run;
 
                     int recordsLeft =
-                            Integer.min(runs.get(runIndex).getRecords()
-                                        - completedRecords[run],
+                            Integer.min((runs.get(runIndex).getRecords()
+                                        - completedRecords[run]) * recordSize,
                                     inputBuffer.capacity());
 
-                    loadBlockToHeap(runs.get(runIndex).getStart()
-                                    + completedRecords[run], recordsLeft, run);
+                    long start = (long) (runs.get(runIndex).getStart()
+                                            + completedRecords[run])
+                                 * recordSize;
+
+                    start = (start == 0) ? 0: start - recordSize;
+
+                    loadBlockToHeap(start, recordsLeft, run);
                 }
 
                 if (completedRecords[run] == totalGroupRecords[run]) {
@@ -296,6 +344,7 @@ public class Sort {
 
     private void loadBlockToHeap(long position, int length, int runFlag)
             throws IOException {
+        inputBuffer.clear();
         sortFile.read(inputBuffer, position, length);
         byte[] rec = new byte[recordSize];
 
@@ -312,6 +361,7 @@ public class Sort {
         FileInputStream fis = new FileInputStream(source);
         FileOutputStream fos = new FileOutputStream(destination);
 
+        inputBuffer.clear();
         while (fis.read(inputBuffer.array()) > -1) {
             fos.write(inputBuffer.array());
         }

@@ -25,7 +25,7 @@ public class Record implements Comparable<Record> {
             throw new IllegalArgumentException();
         }
 
-        record = ByteBuffer.wrap(rec);
+        record = ByteBuffer.wrap(rec.clone());
     }
 
 
@@ -40,7 +40,7 @@ public class Record implements Comparable<Record> {
             throw new IllegalArgumentException();
         }
 
-        record = ByteBuffer.wrap(rec);
+        record = ByteBuffer.wrap(rec.clone());
         runFlag = run;
     }
 
@@ -51,7 +51,7 @@ public class Record implements Comparable<Record> {
      * @return byte array
      */
     public byte[] getBytes() {
-        return record.array();
+        return record.array().clone();
     }
 
 
@@ -128,6 +128,6 @@ public class Record implements Comparable<Record> {
             return 0;
         }
 
-        return Long.compare(o.getKey(), getKey());
+        return Long.compare(getKey(), o.getKey());
     }
 }

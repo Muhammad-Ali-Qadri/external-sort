@@ -25,14 +25,14 @@ Externalsort is then name of the program. The file where you have your main() me
 record-filename is the name of the file with the records to be sorted. At the end of your program, this record file (on disk) should be sorted. So this program does modify the input data file. Be careful to keep a copy of the original when you do your testing. You may assume that the specified record file does exist in our test cases.
 In addition to sorting the data file, you must report some information about the execution of your program. You will need to report part of the sorted data file to standard output. Specifically, your program will print, to standard output, the first record from each 8192-byte block, in order, from the sorted data file. The records are to be printed 5 records to a line (showing both the key value and the id value for each record), the values separated by whitespace and formatted into columns. This program output must appear EXACTLY as described; ANY deviation from this requirement may result in a significant deduction in points. See the provided expected output example file to see how your output should be formatted.
 
-You are also provided a standalone java program called GenFile.java  Download GenFile.javathat will generate input files with randomized data for you to use in your testing.
+You are also provided a standalone java program called tests.GenFile.java  Download tests.GenFile.javathat will generate input files with randomized data for you to use in your testing.
 
-The GenFile program can be invoked from the command-line as:
+The tests.GenFile program can be invoked from the command-line as:
 
-%> java GenFile <filename> <size-in-blocks>
+%> java tests.GenFile <filename> <size-in-blocks>
 where:
 
-GenFile is the name of the program.
+tests.GenFile is the name of the program.
 <filename> is the name of the file where the randomized test records will be stored.
 <size in blocks> indicates the number of blocks of data to generate for the file.
 Feel free to extend this file to create sorted versions of your test data, so that you can compare the output of your program to a known sorted output.

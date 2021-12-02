@@ -19,6 +19,7 @@
 // letter of this restriction.
 
 import externalsort.Sort;
+import tests.GenFile;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -37,8 +38,11 @@ public class ExternalSort {
         }
 
         try {
-            Sort sorter = new Sort("", 16, 512, 1, 1, 8);
-            sorter.sort();
+            GenFile.random(new String[]{"smallRandom", "6"});
+            Sort sorter = new Sort( 16, 2, 1, 1, 2);
+            sorter.sort("smallRandom");
+            //Sort sorter = new Sort("", 16, 512, 1, 1, 8);
+            //sorter.sort();
         }
         catch (FileNotFoundException e) {
             System.out.println("Invalid file: " + args[0]);
