@@ -115,7 +115,8 @@ public class Record implements Comparable<Record> {
      */
     @Override
     public String toString() {
-        return getKey() + "\t" + getValue();
+        //TODO: Fix format
+        return getKey() + " " + getValue();
     }
 
 
