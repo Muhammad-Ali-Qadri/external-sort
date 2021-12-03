@@ -24,7 +24,7 @@ public class GenFile {
     /**
      * Max num of records
      */
-    static final int NUMRECS = 2; // Because they are short ints
+    static final int NUMRECS = 512; // Because they are short ints
 
     /** Initialize the random variable */
     static private Random value = new Random(); // Hold the Random class object

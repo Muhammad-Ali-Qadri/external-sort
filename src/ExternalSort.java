@@ -41,7 +41,7 @@ public class ExternalSort {
             GenFile.random(new String[]{"smallRandom", "6"});
             Sort sorter = new Sort( 16, 2, 1, 1, 2);
             sorter.sort("smallRandom");
-            //Sort sorter = new Sort("", 16, 512, 1, 1, 8);
+            //Sort sorter = new Sort(16, 512, 1, 1, 8);
             //sorter.sort();
         }
         catch (FileNotFoundException e) {

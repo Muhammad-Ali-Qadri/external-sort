@@ -1,10 +1,8 @@
 package externalsort;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.ByteBuffer;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,8 +35,6 @@ public class Sort {
     private final int heapBlocks;
 
     private int runCounter;
-
-    private List<Long> checkRun; //TODO: Remove after debugging
 
     /**
      * Instantiate the sorting process based on defined environment parameters
@@ -77,9 +73,6 @@ public class Sort {
      * @throws IOException If the file throws an unexpected error
      */
     public void sort(String fileName) throws IOException {
-
-        checkRun = new ArrayList<>();
-
         if (fileName.isEmpty()) {
             throw new IllegalArgumentException();
         }
@@ -87,6 +80,8 @@ public class Sort {
         sortFileName = fileName;
         initializeMemory();
 
+        //Position of pointer in the original file (for reading block into
+        // input buffer)
         long seekPos = 0;
         Record lastPopped = null;
 
@@ -111,7 +106,6 @@ public class Sort {
 
                 if (heap.isFull() && heap.getSize() != 0) {
                     lastPopped = heap.pop();
-                    checkRun.add(lastPopped.getKey());
                     putAndFlush(lastPopped);
                 }
 
@@ -131,7 +125,7 @@ public class Sort {
             seekPos += (long) recordSize * recordsInBlock;
         }
 
-        if (heap.isEmpty() && runs.isEmpty()) {
+        if (heap.isEmpty() && (runs.isEmpty() || heap.hasHiddenElements())) {
             resetForRun(runs);
         }
 
@@ -143,7 +137,9 @@ public class Sort {
         mergeRuns(heapBlocks);
     }
 
-    private void initializeMemory() throws FileNotFoundException {
+    private void initializeMemory() throws IOException {
+        Files.deleteIfExists(new File(RUN_FILE_NAME).toPath());
+
         heap = new MinHeap<>(recordsInBlock * heapBlocks);
         inputBuffer =
                 ByteBuffer.allocate(recordSize * recordsInBlock
@@ -201,7 +197,6 @@ public class Sort {
 
             if (!heap.isEmpty()) {
                 lastPopped = heap.pop();
-                checkRun.add(lastPopped.getKey());
                 putAndFlush(lastPopped);
                 addedVisibleElements = true;
             } //Heap is full and all elements are hidden
@@ -226,8 +221,7 @@ public class Sort {
      *
      * @param blocksToMerge describes how many runs are being referenced.
      */
-    private void mergeRuns(int blocksToMerge) throws
-            FileNotFoundException, IOException {
+    private void mergeRuns(int blocksToMerge) throws IOException {
 
         boolean hasMerged = false;
         //Repeat until our file is a single run (indicates sorted file)
@@ -243,8 +237,8 @@ public class Sort {
             outputFile = new FileOutputStream(sortFileName, true);
 
             //For each set of blocksToMerge number of runs
-            int totalGroups = (runs.size() / blocksToMerge) == 0 ? 1 :
-                    (runs.size() / blocksToMerge);
+            int totalGroups =
+                    (int)Math.ceil((double)runs.size() / blocksToMerge);
 
             //Complete runs on file
             runs = completeMergeRun(blocksToMerge, totalGroups);
@@ -266,22 +260,28 @@ public class Sort {
 
     private List<Run> completeMergeRun(int blocksToMerge, int totalGroups)
             throws IOException {
+
         List<Run> mergeRuns = new ArrayList<>();
+        int isOddRuns = runs.size() % blocksToMerge;
+
         for (int runGroup = 0; runGroup < totalGroups; runGroup++) {
+            int groupBlocksToInclude = blocksToMerge;
+            //Done in case of runs that are not multiple of blocks to merge
+            if(runGroup + 1 == totalGroups && isOddRuns > 0){
+                groupBlocksToInclude = isOddRuns;
+            }
 
             runCounter = 0;
             int[] totalGroupRecords =
-                    getRunRecordCounts(runGroup, blocksToMerge);
-            int[] completedRecords = new int[blocksToMerge];
+                    getRunRecordCounts(runGroup, blocksToMerge,
+                            groupBlocksToInclude);
+            int[] completedRecords = new int[groupBlocksToInclude];
 
             //Load each run`s first blocks into the heap
-            //TODO: Fix some bugs, see while debugging on test case
-            for (int run = 0; run < blocksToMerge; run++) {
+            for (int run = 0; run < groupBlocksToInclude; run++) {
                 int runIndex = (runGroup * blocksToMerge) + run;
                 long start = (long) runs.get(runIndex).getStart() * recordSize;
                 int length = runs.get(runIndex).getRecords() * recordSize;
-
-                start = (start == 0) ? 0: start - recordSize;
 
                 loadBlockToHeap(start,
                         Integer.min(length, inputBuffer.capacity()), run);
@@ -309,8 +309,6 @@ public class Sort {
                                             + completedRecords[run])
                                  * recordSize;
 
-                    start = (start == 0) ? 0: start - recordSize;
-
                     loadBlockToHeap(start, recordsLeft, run);
                 }
 
@@ -332,9 +330,10 @@ public class Sort {
     }
 
 
-    private int[] getRunRecordCounts(int runGroup, int blocksToMerge) {
+    private int[] getRunRecordCounts(int runGroup, int blocksToMerge,
+                                     int groupBlocksToInclude) {
         int[] runBlockMap = new int[blocksToMerge];
-        for (int i = 0; i < blocksToMerge; i++) {
+        for (int i = 0; i < groupBlocksToInclude; i++) {
             int runPos = (runGroup * blocksToMerge) + i;
             runBlockMap[i] = runs.get(runPos).getRecords();
         }
@@ -348,15 +347,16 @@ public class Sort {
         sortFile.read(inputBuffer, position, length);
         byte[] rec = new byte[recordSize];
 
-        while (inputBuffer.hasRemaining()) {
+        while (length != 0) {
             inputBuffer.get(rec);
             heap.insert(new Record(rec, runFlag));
+            length -= recordSize;
         }
     }
 
 
     private void copyContent(String source, String destination)
-            throws FileNotFoundException, IOException {
+            throws IOException {
 
         FileInputStream fis = new FileInputStream(source);
         FileOutputStream fos = new FileOutputStream(destination);
@@ -370,5 +370,4 @@ public class Sort {
         fos.close();
         inputBuffer.clear();
     }
-
 }
