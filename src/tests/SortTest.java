@@ -34,8 +34,7 @@ public class SortTest {
      * */
     @Test
     public void testBigRandomFile() throws IOException {
-
-        testSortConfig("bigRandom", 16, 512, 8, RANDOM);
+        testSortConfig("bigRandom", 8, 512, 8, RANDOM);
     }
 
     /**
@@ -66,6 +65,7 @@ public class SortTest {
 
         Files.deleteIfExists(new File(fileName).toPath());
 
+
         if(fileType.equals(SORTED)){
             GenFile.sorted(new String[]{fileName, String.valueOf(blocks)});
         }
@@ -76,6 +76,9 @@ public class SortTest {
             GenFile.reversed(new String[]{fileName, String.valueOf(blocks)});
         }
 
+
+        Files.deleteIfExists(new File(fileName + "copy").toPath());
+        copyContent(fileName, fileName + "copy", blocks);
         sorter.sort(fileName);
 
         checkSorting(fileName, blocks, blockRecords);
@@ -87,6 +90,7 @@ public class SortTest {
         RandomAccessFile raf = new RandomAccessFile(fileName, "rws");
 
         List<Record> r = new ArrayList<>();
+        List<Record> org = new ArrayList<>();
         for(int i = 0; i < blocks; i++){
             ByteBuffer b = ByteBuffer.allocate(blockRecords * 16);
             raf.read(b.array());
@@ -101,9 +105,55 @@ public class SortTest {
         raf.close();
 
         for(int i = 0; i < r.size(); i++){
-            if(i + 1 != r.size() && r.get(i).getKey() > r.get(i + 1).getKey()){
+            if(i + 1 != r.size() && r.get(i).getValue() > r.get(i + 1).getValue()){
                 fail();
             }
         }
+
+        /*
+        RandomAccessFile raf2 = new RandomAccessFile(fileName + "copy", "rws");
+
+        for(int i = 0; i < blocks; i++){
+            ByteBuffer b = ByteBuffer.allocate(blockRecords * 16);
+            raf2.read(b.array());
+
+            while(b.hasRemaining()){
+                byte[] t = new byte[16];
+                b.get(t);
+                org.add(new Record(t));
+            }
+        }
+
+        raf2.close();
+
+        int i = 0;
+        for (Record entry : org) {
+            if ( !r.contains(entry) ) {
+                System.out.println(entry);
+                i++;
+            }
+               // fail();
+        }
+        System.out.println("number of entries wrong... " + i);
+        */
     }
+
+
+    private void copyContent(String source, String destination, int blocks)
+            throws IOException {
+
+        FileInputStream fis = new FileInputStream(source);
+        FileOutputStream fos = new FileOutputStream(destination);
+        ByteBuffer inputBuffer = ByteBuffer.allocate(blocks * 16);
+
+        inputBuffer.clear();
+        while (fis.read(inputBuffer.array()) > -1) {
+            fos.write(inputBuffer.array());
+        }
+
+        fis.close();
+        fos.close();
+        inputBuffer.clear();
+    }
+
 }

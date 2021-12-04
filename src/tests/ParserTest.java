@@ -8,6 +8,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import static org.junit.Assert.*;
+
 
 public class ParserTest {
     Parser parser;
@@ -19,7 +21,7 @@ public class ParserTest {
     @Before
     public void setUp() {
         try {
-            parser = new Parser("./Data/sampleInput16.bin");
+            parser = new Parser("bigRandom");
         }
         catch (FileNotFoundException e) {
             System.out.println("File did not exist.");
@@ -35,22 +37,11 @@ public class ParserTest {
         inputBuffer = ByteBuffer.allocate(16 * 512);
         int index = 0;
         try {
-            while (parser.read(inputBuffer, index, inputBuffer.limit()) > 0) {
-                byte[] rec = new byte[16];
-                inputBuffer.get(rec, 0, 16);
-                Record record = new Record(rec);
-                System.out.println("Record key is.. " + record.getKey() );
-                System.out.println("Record value is... " + record.getValue() );
-                index +=16;
-                System.out.println("Index is: "+ index);
-
-                if (!inputBuffer.hasRemaining() ) {
-                    inputBuffer.clear();
-                }
-            }
+            int val = parser.read(inputBuffer, 1, 16);
+            assertEquals(-1, val);
         }
         catch (IOException e) {
-            System.out.println("IO error");
+            System.out.println("Invalid inputs");
         }
     }
 }

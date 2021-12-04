@@ -6,9 +6,12 @@ import org.junit.Test;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+
 
 /**
  * Test Record class
@@ -71,7 +74,7 @@ public class RecordTest {
      */
     @Test
     public void testGetBytes() {
-        assertEquals(byteArray, record_run.getBytes());
+        assertTrue( Arrays.equals(byteArray, record_run.getBytes() ) );
     }
 
 
@@ -80,7 +83,7 @@ public class RecordTest {
      */
     @Test
     public void testToString() {
-        assertEquals("1\t2.0", record_run.toString());
+        assertEquals("1 2.0", record_run.toString());
     }
 
 
@@ -142,8 +145,22 @@ public class RecordTest {
                 getBytes(StandardCharsets.US_ASCII);
         Record big = new Record(arr);
 
-        assertEquals(1, record.compareTo(big));
-        assertEquals(-1, big.compareTo(record));
+        assertEquals(0, record.compareTo(big));
+        assertEquals(0, big.compareTo(record));
+        assertEquals(0, record_run.compareTo(record));
+    }
+
+    /**
+     * Checks greater key, less, and equal
+     */
+    @Test
+    public void testCompareTo2() {
+        byte[] arr = "\0\0\0\0\0\0\0\5@\10\0\0\0\0\0\0\25".
+                getBytes(StandardCharsets.US_ASCII);
+        Record big = new Record(arr);
+
+        assertEquals(-1, record.compareTo(big));
+        assertEquals(1, big.compareTo(record));
         assertEquals(0, record_run.compareTo(record));
     }
 }

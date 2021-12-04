@@ -157,7 +157,7 @@ public class Sort {
 
     private void putAndFlush(Record out) throws IOException {
         outputBuffer.putLong(out.getKey());
-        outputBuffer.putDouble(out.getKey());
+        outputBuffer.putDouble(out.getValue());
         runCounter++;
 
         if (!outputBuffer.hasRemaining()) {

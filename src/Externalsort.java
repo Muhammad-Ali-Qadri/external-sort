@@ -37,41 +37,69 @@ import static org.junit.Assert.fail;
  * @author Muhammad Ali Qadri
  * @version 1
  */
-public class ExternalSort {
+public class Externalsort {
     public static void main(String[] args) {
         if (args[0] == null) {
             System.out.println("File expected");
             return;
         }
 
-        int blocks = 16;
+        int blocks = 512;
+        int recordSize = 16;
 
         try {
-            GenFile.random(new String[]{args[0], String.valueOf(blocks)});
-            Sort sorter = new Sort(16, 512, 1, 1, 8);
+            Sort sorter = new Sort(recordSize, blocks, 1, 1, 8);
             sorter.sort(args[0]);
 
             RandomAccessFile raf = new RandomAccessFile(args[0], "rws");
 
+            ByteBuffer b = ByteBuffer.allocate(recordSize);
             List<Record> r = new ArrayList<>();
-            for(int i = 0; i < blocks; i++){
-                raf.seek(16 * blocks * i);
-                ByteBuffer b = ByteBuffer.allocate(16);
-
-                raf.read(b.array());
-
-                while(b.hasRemaining()){
+            int seekPos = 0;
+            raf.seek(seekPos);
+            while (raf.read(b.array(), 0, 16) > 0)   {
+                while(b.hasRemaining()) {
                     byte[] t = new byte[16];
                     b.get(t);
-                    r.add(new Record(t));
+                    Record temp = new Record(t);
+                    r.add(temp);
                 }
+                b.clear();
+                seekPos += (long) recordSize * blocks;
+                raf.seek(seekPos);
             }
 
             raf.close();
+            for(int i = 0 ; i < r.size(); i++) {
+                if (i % 5 == 0 && i != 0) {
+                    System.out.println("");
+                }
 
-            for (Record record : r) {
-                System.out.println(record);
+                String printMe = r.get(i).toString() + "\t\t";
+
+                System.out.print(printMe);
+
             }
+
+            /*
+            while (raf.read(b.array() ) > 0){
+
+                byte[] t = new byte[16];
+                b.get(t);
+                Record obj = new Record(t);
+                if (j == 5) {
+                    System.out.println();
+                    j = 0;
+                }
+                if (j % 5 != 0) {
+                    System.out.print("\t");
+                }
+                System.out.print(obj);
+                j++;
+                b.clear();
+            }
+            */
+            raf.close();
         }
         catch (FileNotFoundException e) {
             System.out.println("Invalid file: " + args[0]);

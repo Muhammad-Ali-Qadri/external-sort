@@ -104,7 +104,7 @@ public class Record implements Comparable<Record> {
 
         Record record1 = (Record) o;
         return getRunFlag() == record1.getRunFlag() &&
-               record.equals(record1.record);
+               getKey() == record1.getKey() && getValue() == record1.getValue();
     }
 
 
@@ -129,6 +129,6 @@ public class Record implements Comparable<Record> {
             return 0;
         }
 
-        return Long.compare(getKey(), o.getKey());
+        return Double.compare(getValue(), o.getValue() );
     }
 }
