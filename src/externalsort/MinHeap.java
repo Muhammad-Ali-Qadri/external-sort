@@ -8,6 +8,7 @@ import java.lang.reflect.Array;
  *
  * @author Muhammad Ali Qadri
  * @version 1
+ * @param <T> Has to be of type comparable.
  */
 public class MinHeap<T extends Comparable<? super T>>
         implements Heap<T> {
@@ -32,7 +33,12 @@ public class MinHeap<T extends Comparable<? super T>>
         currentSize = maxHeapSize; // max entries
     }
 
-
+    /**
+     *
+     * @param h comparable array that'll be used to create minheap
+     * @param num will become the index (or size) to minheap
+     * @param max maximum allowable entries to minheap
+     */
     public MinHeap(T[] h, int num, int max) {
         maxHeapSize = max;
         heap = h;
@@ -101,7 +107,7 @@ public class MinHeap<T extends Comparable<? super T>>
      */
     @Override
     public void recreate() {
-        if(hasHiddenElements()){
+        if (hasHiddenElements()) {
             index = maxHeapSize;
             currentSize = maxHeapSize;
             heapify();
@@ -152,8 +158,8 @@ public class MinHeap<T extends Comparable<? super T>>
     public void heapifyHiddenElements() {
         //Only when visible elements are empty and only hidden elements remain
         //Bring the hidden elements to the front of the heap
-        if(index == 0 && currentSize < maxHeapSize){
-            for(int i = 0; currentSize + i < maxHeapSize; i++){
+        if (index == 0 && currentSize < maxHeapSize) {
+            for (int i = 0; currentSize + i < maxHeapSize; i++) {
                 heap[i] = heap[i + currentSize];
             }
 
@@ -244,6 +250,31 @@ public class MinHeap<T extends Comparable<? super T>>
 
             swap(pos, j);
             pos = j;  // Move down
+        }
+    }
+
+    /**
+     *
+     * @param direction left, right, or parent desired, if none -1 is returned.
+     * @param refIndex index of the array that's relative is being desired.
+     * @return the index of the relative.
+     */
+    public int getChildLeftOrRightOrParent(String direction, int refIndex) {
+        if (direction.equals("left") ) {
+            return leftChild(refIndex);
+        }
+        else if (direction.equals("right") ) {
+            return rightChild(refIndex);
+        }
+        else if (direction.equals("parent") ) {
+            return parent(refIndex);
+        }
+        else if (direction.equals("leaf") ) {
+            boolean test = isLeaf(refIndex);
+            return test ? 1 : 0;
+        }
+        else {
+            return -1;
         }
     }
 

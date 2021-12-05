@@ -116,7 +116,7 @@ public class MinHeapTest {
      * Test if heap can restructure itself to comply with heap property
      * */
     @Test
-    public void testHeapify(){
+    public void testHeapify() {
         overflowTest();
         minheap.heapify();
         assertEquals("1, 4, 2, 7, 5, 6, 3", minheap.toString());
@@ -128,7 +128,7 @@ public class MinHeapTest {
      * elements
      * */
     @Test
-    public void testCreate(){
+    public void testCreate() {
         extensiveHideAtEndTest();
         minheap.recreate();
         assertEquals("1, 4, 2, 7, 5, 6, 8", minheap.toString());
@@ -141,7 +141,7 @@ public class MinHeapTest {
      * elements remain, they are put back into start of heap and heapify is done
      * */
     @Test
-    public void testHeapifyHiddenElements(){
+    public void testHeapifyHiddenElements() {
         minheap.hideAtEnd(8);
         minheap.hideAtEnd(9);
 
@@ -163,7 +163,7 @@ public class MinHeapTest {
      * and heapify is done
      * */
     @Test
-    public void testComplexHeapifyHiddenElements(){
+    public void testComplexHeapifyHiddenElements() {
         overflowTest();
 
         popAndHide(1, 3, 6);
@@ -185,8 +185,81 @@ public class MinHeapTest {
 
     }
 
+    /**
+     * Tests Right child functionality of minheap. And Left, and parent.
+     */
+    @Test
+    public void testRightChild() {
+        overflowTest();
+        Integer[] items = new Integer[3];
+        items[0] = 10;
+        items[1] = 3;
+        items[2] = 6;
+        MinHeap min = new MinHeap<Integer>(items, 3, 10);
 
-    private void popAndHide(int pop, int hide, int expectedSize){
+        int right = min.getChildLeftOrRightOrParent("right" , 0);
+        int right2 = min.getChildLeftOrRightOrParent("right" , 5);
+        int right3 = min.getChildLeftOrRightOrParent("basd" , 5);
+        int left = min.getChildLeftOrRightOrParent("left", 24);
+        int parent = min.getChildLeftOrRightOrParent("parent", -2);
+        int leaf = min.getChildLeftOrRightOrParent("leaf", 0);
+        int leaf2 = min.getChildLeftOrRightOrParent("leaf", 1);
+        int leaf3 = min.getChildLeftOrRightOrParent("leaf", 5);
+
+
+        assertEquals(2, right);
+        assertEquals(-1, right2);
+        assertEquals(-1, right3);
+        assertEquals(-1, left);
+        assertEquals(-1, parent);
+        assertEquals(leaf, 0);
+        assertEquals(leaf2, 1);
+        assertEquals(leaf3, 0);
+    }
+
+    /**
+     * Tests pop on an empty heap.
+     */
+    @Test
+    public void popOnEmpty() {
+        Integer[] items = new Integer[3];
+        items[0] = 10;
+        items[1] = 3;
+        items[2] = 6;
+        MinHeap min = new MinHeap<Integer>(items, 0, 10);
+        boolean val = false;
+        minheap.pop();
+        try {
+            min.pop();
+        }
+        catch (AssertionError e) {
+            val = !val;
+            assertTrue(val);
+        }
+    }
+
+    /**
+     * Tests last recreate branch
+     */
+    @Test
+    public void testRecreateBranch() {
+        minheap.recreate();
+        assertEquals("5", minheap.toString());
+    }
+
+    /**
+     * Test the heapify branches
+     */
+    @Test
+    public void testHeapifyHideBranches() {
+        minheap.isEmpty();
+        minheap.isFull();
+        minheap.pop();
+        minheap.heapifyHiddenElements();
+        assertEquals("" , minheap.toString() );
+    }
+
+    private void popAndHide(int pop, int hide, int expectedSize) {
         assertEquals((Integer) pop, minheap.pop());
 
         minheap.hideAtEnd(hide);

@@ -11,7 +11,7 @@ import java.nio.ByteBuffer;
  */
 public class Record implements Comparable<Record> {
 
-    private final ByteBuffer record;
+    private final ByteBuffer bytes;
     private int runFlag;
 
     /**
@@ -25,7 +25,7 @@ public class Record implements Comparable<Record> {
             throw new IllegalArgumentException();
         }
 
-        record = ByteBuffer.wrap(rec.clone());
+        bytes = ByteBuffer.wrap(rec.clone());
     }
 
 
@@ -40,7 +40,7 @@ public class Record implements Comparable<Record> {
             throw new IllegalArgumentException();
         }
 
-        record = ByteBuffer.wrap(rec.clone());
+        bytes = ByteBuffer.wrap(rec.clone());
         runFlag = run;
     }
 
@@ -51,7 +51,7 @@ public class Record implements Comparable<Record> {
      * @return byte array
      */
     public byte[] getBytes() {
-        return record.array().clone();
+        return bytes.array().clone();
     }
 
 
@@ -61,7 +61,7 @@ public class Record implements Comparable<Record> {
      * @return Long key value
      */
     public long getKey() {
-        return record.getLong(0);
+        return bytes.getLong(0);
     }
 
 
@@ -71,7 +71,7 @@ public class Record implements Comparable<Record> {
      * @return Double value
      */
     public double getValue() {
-        return record.getDouble(8);
+        return bytes.getDouble(8);
     }
 
 
@@ -90,7 +90,7 @@ public class Record implements Comparable<Record> {
      */
     @Override
     public int hashCode() {
-        return (17 * runFlag) + (record.hashCode() * 13) + super.hashCode();
+        return (17 * runFlag) + (bytes.hashCode() * 13) + super.hashCode();
     }
 
 
@@ -99,8 +99,12 @@ public class Record implements Comparable<Record> {
      */
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Record)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Record)) {
+            return false;
+        }
 
         Record record1 = (Record) o;
         return getRunFlag() == record1.getRunFlag() &&
@@ -115,7 +119,6 @@ public class Record implements Comparable<Record> {
      */
     @Override
     public String toString() {
-        //TODO: Fix format
         return getKey() + " " + getValue();
     }
 

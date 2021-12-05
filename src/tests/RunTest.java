@@ -4,7 +4,7 @@ import externalsort.Run;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 /**
  * Test Run class
@@ -30,7 +30,7 @@ public class RunTest {
      *
      * */
     @Test
-    public void testGetStart(){
+    public void testGetStart() {
         assertEquals(0, run.getStart());
     }
 
@@ -39,7 +39,23 @@ public class RunTest {
      *
      * */
     @Test
-    public void testGetLength(){
+    public void testGetLength() {
         assertEquals(32, run.getRecords());
+    }
+
+    /**
+     * Illegal run creation test
+     */
+    @Test
+    public void testIllegalRuns() {
+        boolean test = false;
+        try {
+            Run illegal = new Run(0, 0);
+        }
+        catch (IllegalArgumentException e) {
+            test = !test;
+            assertTrue(test);
+        }
+
     }
 }

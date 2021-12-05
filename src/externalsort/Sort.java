@@ -102,7 +102,7 @@ public class Sort {
                     //clear last popped
                     lastPopped = null;
 
-                }//If heap is full and there are visible elements
+                } //If heap is full and there are visible elements
 
                 if (heap.isFull() && heap.getSize() != 0) {
                     lastPopped = heap.pop();
@@ -267,7 +267,7 @@ public class Sort {
         for (int runGroup = 0; runGroup < totalGroups; runGroup++) {
             int groupBlocksToInclude = blocksToMerge;
             //Done in case of runs that are not multiple of blocks to merge
-            if(runGroup + 1 == totalGroups && isOddRuns > 0){
+            if (runGroup + 1 == totalGroups && isOddRuns > 0) {
                 groupBlocksToInclude = isOddRuns;
             }
 

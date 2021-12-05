@@ -1,4 +1,4 @@
-package tests;// WARNING: This program uses the Assertion class. When it is run,
+package tests;  // WARNING: This uses the Assertion class. When it is run.
 // assertions must be turned on. For example, under Linux, use:
 // java -ea Genfile
 
@@ -39,7 +39,7 @@ public class GenFile {
 
     /**
      * Gets a random long
-     * 
+     * @param range defines how big of value you want * 10
      * @return a random long
      */
     static long randLong(int range) {

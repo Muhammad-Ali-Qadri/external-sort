@@ -22,7 +22,7 @@ import static org.junit.Assert.assertTrue;
 public class RecordTest {
 
     private Record record;     //Initialized with key: 1, value: 2
-    private Record record_run;    //Initialized with key: 1, value: 2, run = 2
+    private Record recordRun;    //Initialized with key: 1, value: 2, run = 2
 
     //Represents key: 1, value: 2
     private final byte[] byteArray = "\0\0\0\0\0\0\0\01@\0\0\0\0\0\0\0".
@@ -38,7 +38,7 @@ public class RecordTest {
         byteBuffer.putDouble(d);
         byte[] ad = byteBuffer.array();
         record = new Record(byteArray);
-        record_run = new Record(byteArray, 2);
+        recordRun = new Record(byteArray, 2);
     }
 
 
@@ -65,7 +65,7 @@ public class RecordTest {
      */
     @Test
     public void testGetFlag() {
-        assertEquals(2, record_run.getRunFlag());
+        assertEquals(2, recordRun.getRunFlag());
     }
 
 
@@ -74,7 +74,7 @@ public class RecordTest {
      */
     @Test
     public void testGetBytes() {
-        assertTrue( Arrays.equals(byteArray, record_run.getBytes() ) );
+        assertTrue( Arrays.equals(byteArray, recordRun.getBytes() ) );
     }
 
 
@@ -83,7 +83,7 @@ public class RecordTest {
      */
     @Test
     public void testToString() {
-        assertEquals("1 2.0", record_run.toString());
+        assertEquals("1 2.0", recordRun.toString());
     }
 
 
@@ -92,7 +92,7 @@ public class RecordTest {
      */
     @Test
     public void testNotEqualAnotherObject() {
-        assertNotEquals("1\t2.0", record_run);
+        assertNotEquals("1\t2.0", recordRun);
     }
 
 
@@ -101,7 +101,7 @@ public class RecordTest {
      */
     @Test
     public void testEqualsSame() {
-        assertEquals(record_run, record_run);
+        assertEquals(recordRun, recordRun);
     }
 
 
@@ -112,7 +112,7 @@ public class RecordTest {
     public void testNotEqualDifferentKey() {
         byte[] arr = "\0\0\0\0\0\0\0\02@\0\0\0\0\0\0\0\0".
                 getBytes(StandardCharsets.US_ASCII);
-        assertNotEquals(record_run, new Record(arr));
+        assertNotEquals(recordRun, new Record(arr));
     }
 
 
@@ -123,7 +123,7 @@ public class RecordTest {
     public void testNotEqualDifferentValue() {
         byte[] arr = "\0\0\0\0\0\0\0\01@\0\0\0\0\0\0\0\0".
                 getBytes(StandardCharsets.US_ASCII);
-        assertNotEquals(record_run, new Record(arr));
+        assertNotEquals(recordRun, new Record(arr));
     }
 
 
@@ -147,7 +147,7 @@ public class RecordTest {
 
         assertEquals(0, record.compareTo(big));
         assertEquals(0, big.compareTo(record));
-        assertEquals(0, record_run.compareTo(record));
+        assertEquals(0, recordRun.compareTo(record));
     }
 
     /**
@@ -161,6 +161,63 @@ public class RecordTest {
 
         assertEquals(-1, record.compareTo(big));
         assertEquals(1, big.compareTo(record));
-        assertEquals(0, record_run.compareTo(record));
+        assertEquals(0, recordRun.compareTo(record));
+    }
+
+    /**
+     * Tests hashcode of record class
+     */
+    @Test
+    public void testHashCode() {
+        int hashcode = record.hashCode();
+        int hashcode2 = recordRun.hashCode();
+
+        assertNotEquals(hashcode, hashcode2);
+    }
+
+    /**
+     * Tests illegal record with run, and without run, and compareTo with null
+     */
+    @Test
+    public void illegalRecords() {
+        byte[] bytes = new byte[0];
+        boolean test1 = false;
+        boolean test2 = false;
+        boolean test3 = false;
+        boolean test4 = false;
+        boolean test5 = false;
+        try {
+            Record rec = new Record(null);
+        }
+        catch (IllegalArgumentException e) {
+            test1 = !test1;
+            assertTrue(test1);
+        }
+
+        try {
+            Record rec2 = new Record(bytes);
+        }
+        catch (IllegalArgumentException e) {
+            test2 = !test2;
+            assertTrue(test2);
+        }
+
+        try  {
+            Record rec = new Record(null, 0);
+        }
+        catch (IllegalArgumentException e) {
+            test3 = !test3;
+            assertTrue(test3);
+        }
+
+        try {
+            Record rec = new Record(bytes, 0);
+        }
+        catch (IllegalArgumentException e) {
+            test4 = !test4;
+            assertTrue(test4);
+        }
+
+        assertEquals(record.compareTo(null) , 0);
     }
 }

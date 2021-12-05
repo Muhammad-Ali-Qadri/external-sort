@@ -2,14 +2,12 @@ package tests;
 
 import externalsort.Record;
 import externalsort.Sort;
-import org.junit.Before;
 import org.junit.Test;
 
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -22,8 +20,6 @@ import static org.junit.Assert.*;
  */
 public class SortTest {
 
-    private Sort sorter;
-
     private static final String SORTED = "SORTED";
     private static final String RANDOM = "RANDOM";
     private static final String REVERSE = "REVERSE";
@@ -34,7 +30,8 @@ public class SortTest {
      * */
     @Test
     public void testBigRandomFile() throws IOException {
-        testSortConfig("bigRandom", 8, 512, 8, RANDOM);
+        boolean val = testSortConfig("bigRandom", 8, 512, 8, RANDOM);
+        assertTrue(val);
     }
 
     /**
@@ -43,7 +40,8 @@ public class SortTest {
      * */
     @Test
     public void testBigSortedFile() throws IOException {
-        testSortConfig("bigSorted", 16, 512, 8, SORTED);
+        boolean val = testSortConfig("bigSorted", 16, 512, 8, SORTED);
+        assertTrue(val);
     }
 
 
@@ -54,22 +52,25 @@ public class SortTest {
      * */
     @Test
     public void testBigReverseFile() throws IOException {
-        testSortConfig("bigReverse", 16, 512, 8, REVERSE);
+        boolean val = testSortConfig("bigReverse", 16, 512, 8, REVERSE);
+        assertTrue(val);
     }
 
-    private void testSortConfig(String fileName, int blocks, int blockRecords,
-                                int heapSize, String fileType)
-            throws IOException{
+    private boolean testSortConfig(String fileName, int blocks, int
+            blockRecords, int heapSize, String fileType)
+            throws IOException {
+
+        Sort sorter;
 
         sorter = new Sort(16, blockRecords, 1, 1, heapSize);
 
         Files.deleteIfExists(new File(fileName).toPath());
 
 
-        if(fileType.equals(SORTED)){
+        if (fileType.equals(SORTED)) {
             GenFile.sorted(new String[]{fileName, String.valueOf(blocks)});
         }
-        else if(fileType.equals(RANDOM)){
+        else if (fileType.equals(RANDOM)) {
             GenFile.random(new String[]{fileName, String.valueOf(blocks)});
         }
         else {
@@ -81,21 +82,21 @@ public class SortTest {
         copyContent(fileName, fileName + "copy", blocks);
         sorter.sort(fileName);
 
-        checkSorting(fileName, blocks, blockRecords);
+        return checkSorting(fileName, blocks, blockRecords);
     }
 
-    private void checkSorting(String fileName, int blocks, int blockRecords)
+    private boolean checkSorting(String fileName, int blocks, int blockRecords)
             throws IOException {
 
         RandomAccessFile raf = new RandomAccessFile(fileName, "rws");
 
         List<Record> r = new ArrayList<>();
         List<Record> org = new ArrayList<>();
-        for(int i = 0; i < blocks; i++){
+        for (int i = 0; i < blocks; i++) {
             ByteBuffer b = ByteBuffer.allocate(blockRecords * 16);
             raf.read(b.array());
 
-            while(b.hasRemaining()){
+            while (b.hasRemaining()) {
                 byte[] t = new byte[16];
                 b.get(t);
                 r.add(new Record(t));
@@ -104,38 +105,13 @@ public class SortTest {
 
         raf.close();
 
-        for(int i = 0; i < r.size(); i++){
-            if(i + 1 != r.size() && r.get(i).getValue() > r.get(i + 1).getValue()){
+        for (int i = 0; i < r.size(); i++) {
+            if (i + 1 != r.size() &&
+                    r.get(i).getValue() > r.get(i + 1).getValue()) {
                 fail();
             }
         }
-
-        /*
-        RandomAccessFile raf2 = new RandomAccessFile(fileName + "copy", "rws");
-
-        for(int i = 0; i < blocks; i++){
-            ByteBuffer b = ByteBuffer.allocate(blockRecords * 16);
-            raf2.read(b.array());
-
-            while(b.hasRemaining()){
-                byte[] t = new byte[16];
-                b.get(t);
-                org.add(new Record(t));
-            }
-        }
-
-        raf2.close();
-
-        int i = 0;
-        for (Record entry : org) {
-            if ( !r.contains(entry) ) {
-                System.out.println(entry);
-                i++;
-            }
-               // fail();
-        }
-        System.out.println("number of entries wrong... " + i);
-        */
+        return true;
     }
 
 
@@ -154,6 +130,81 @@ public class SortTest {
         fis.close();
         fos.close();
         inputBuffer.clear();
+    }
+
+    /**
+     * Illegal sort creation arguments tests....
+     */
+    @Test
+    public void testIllegalArgs() {
+        Sort sort;
+        Sort sort2;
+        Sort sort3;
+        Sort sort4;
+
+        boolean test1 = false;
+        boolean test2 = false;
+        boolean test3 = false;
+        boolean test4 = false;
+
+        try {
+            sort = new Sort(0, 512, 1, 1, 2);
+        }
+        catch (FileNotFoundException e) {
+            fail();
+        }
+        catch (IllegalArgumentException e) {
+            test1 = !test1;
+            assertTrue(test1);
+        }
+
+        try {
+            sort2 = new Sort(16, 0, 1, 1, 2);
+        }
+        catch (FileNotFoundException e) {
+            fail();
+        }
+        catch (IllegalArgumentException e) {
+            test2 = !test2;
+            assertTrue(test2);
+        }
+
+        try {
+            sort3 = new Sort(16, 512, 0, 1, 2);
+        }
+        catch (FileNotFoundException e) {
+            fail();
+        }
+        catch (IllegalArgumentException e) {
+            test3 = !test3;
+            assertTrue(test3);
+        }
+
+        try {
+            sort4 = new Sort(16, 512, 1, 0, 2);
+        }
+        catch (FileNotFoundException e) {
+            fail();
+        }
+        catch (IllegalArgumentException e) {
+            test4 = !test4;
+            assertTrue(test4);
+        }
+
+        boolean test5 = false;
+        Sort sorter;
+        try {
+            sorter = new Sort(16, 512, 1, 1, 2);
+            sorter.sort("");
+        }
+        catch (IOException e) {
+            fail();
+        }
+        catch (IllegalArgumentException e) {
+            test5 = !test5;
+            assertTrue(test5);
+        }
+
     }
 
 }

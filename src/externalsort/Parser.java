@@ -34,7 +34,8 @@ public class Parser {
      * @param pos    the starting position to get data from within file
      * @param length The length of bytes to write to buffer
      * @throws IOException if failed to read from file, or unexpected
-     *                     parameters are provided
+     * parameters are provided
+     * @return number of read bytes from the file
      */
     public int read(ByteBuffer buffer, long pos, int length)
             throws IOException {

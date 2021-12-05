@@ -17,8 +17,8 @@ public class Run {
      * @param len length of run
      * @param st the starting byte of the run
      * */
-    public Run(int st, int len){
-        if(len == 0){
+    public Run(int st, int len) {
+        if (len == 0) {
             throw new IllegalArgumentException();
         }
 
@@ -26,10 +26,17 @@ public class Run {
         records = len;
     }
 
+    /**
+     *
+     * @return the starting index in the file
+     */
     public int getStart() {
         return start;
     }
 
+    /**
+     * @return the number of records belonging to this run.
+     */
     public int getRecords() {
         return records;
     }
